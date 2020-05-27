@@ -17,7 +17,8 @@ pro setup_ps, name, xsize, ysize
 end
 
 function sfun, vindex, tindex, xindex, $
-		Ftot=Ftot, Wtot=Wtot, Fthermal=Fthermal, Fs=Fs, Wthermal=Wthermal, const0=const0, const1=const1
+		Ftot=Ftot, Wtot=Wtot, Fthermal=Fthermal, Fs=Fs, Wthermal=Wthermal, $
+		const0=const0, const1=const1
 
 	dFtot = Ftot[vindex+1, tindex, xindex] - Ftot[vindex, tindex, xindex]
 	dFtherm = Fthermal[vindex+1]-Fthermal[vindex]
@@ -56,9 +57,9 @@ VT = vthermal/vd
 ;	Normalised variables
 ;	and initial conditions
 ;
-tres = 0.7 ;1d-0
-xres = 0.7 ;1d-0
-vres = 1.0 ;*tres
+tres = 0.5 ;1d-0
+xres = 0.5 ;1d-0
+vres = 0.5 ;*tres
 
 print, 'V and T res ratio: ' + string(vres/tres)
 
@@ -128,17 +129,13 @@ Gamma1 = dblarr( n_elements(V) )
 Gamma2 = dblarr( n_elements(V) )
 Phi = dblarr( n_elements(V) )
 
-dFT = FT[2:-1] - FT[1:-2]
-dFTWT = dFT*WT[1:-2]
-Vind = V[1:-2]
-c0 = ( 1d0/(delv*Vind) )
-c1 = (alog(Vind)/Vind^2)
+
 c2a = 2d0*delt*V
 c2b = delt*V
 c3 = delv*V
+c3b = 2d0/(delv*V)
 c4 = delt*V*alog(V)
-c5 = delt*((WT[1:-2]*Vind^2)/delv)*dFT 
-c6 = (delt/delv) * V^2.0
+c6 = WT*(delt/delv) * V^2.0
 c7 = (delt/delv) * V
 tindex0 = round(11/tres)
 tindex1 = round(10/tres)
@@ -149,19 +146,20 @@ sconst1 = (alog(V)/V^2)
 loadct, 1
 window, 0, xs=800, ys=1000
 window, 1, xs=400, ys=400
-mi1 = where(V lt 1.2 and V gt 1.0)
-
+mi1 = where(V lt 1.3 and V gt 1.0)
+nstart=1
 for l=1, n_elements(X)-1 do begin
 
-	for n=1, n_elements(T)-2 do begin
+	for n=nstart, n_elements(T)-2 do begin
 
+		; Change X-grid spacing after a certain number of iterations.
 		if l le 100 then delx = delx0
 		if l gt 100 and l le 150 then delx = delx1	
 		if l gt 150 then delx = delx2	
 
-		;--------------------------------------;
+		;------------------------------------------;
 		;
-		;			Beam evolution
+		;		Electron beam distribution
 		;
 		for m=1, n_elements(V)-2 do begin
 		
@@ -176,7 +174,7 @@ for l=1, n_elements(X)-1 do begin
 			endif else begin			 
 				Fp[m, n, l] = Fp[m, n, l-2] + $
 							 ( delx/c2b[m] ) * (  Fp[m, n-1, l-1] - Fp[m, n+1, l-1] ) + $
-							 ( 2d0*delx/c3[m] ) * delS
+							 ( c3b[m]*delx ) * delS
 			endelse				
 		
 			Fs[m, n, l] = Ff[m, n, l] + Fp[m, n, l]
@@ -184,13 +182,13 @@ for l=1, n_elements(X)-1 do begin
 			
 		endfor
 		
-		;--------------------------------------;
+		;------------------------------------------;
 		;
-		;	Calculte Langmuir wave energy
+		;	   Langmuir wave energy distribution
 		;
 		for m=1, n_elements(V)-2 do begin
 
-			Phi[m] = c4[m]*Fs[m, n, l] - c6[m]*(FT[m+1]-FT[m])*WT[m]
+			Phi[m] = c4[m]*Fs[m, n, l] - c6[m]*(FT[m+1]-FT[m])
 			Gamma1[m] = c7[m]*( F[m+1, n, l] - F[m, n, l]  )
 			Gamma2[m] = Phi[m]/W[m, n-1, l]
 
@@ -216,8 +214,8 @@ for l=1, n_elements(X)-1 do begin
 
 		W[mi1, n, l] = -Phi[mi1]/Gamma1[mi1]
 
-		nplot = 200
-		if X[l]/D ge 16.0 and n lt nplot then begin
+		nplot = 400
+		if X[l]/D ge 17.0 and n lt nplot and n gt 100 then begin
 			wset, 0
 			plot_image, congrid( sigrange(reform(Fs[*, 0:nplot, l-1])), ntsteps, ntsteps), pos = [0.1, 0.7, 0.5, 0.95], /noerase, title='Fs'
 			plot_image, congrid( bytscl(reform(Fp[*, 0:nplot, l]), -10, 10), ntsteps, ntsteps), pos = [0.1, 0.4, 0.5, 0.65], /noerase, title='Fp'
@@ -228,8 +226,11 @@ for l=1, n_elements(X)-1 do begin
 			wset, 1
 			plot, Vind, Fp[*, n, l], pos = [0.15, 0.15, 0.95, 0.95], yr=[-10,1e3], title=X[l]/D
 			loadct, 1, /silent
+			nstart=100
 			
 		endif
+
+		if X[l]/D ge 5.0 then nstart=100
 		;if n eq 1 then stop
 	endfor
 	progress_percent, l, 1, n_elements(X)-1	
