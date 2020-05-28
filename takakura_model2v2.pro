@@ -45,7 +45,7 @@ ndensity = 1.235d8    ; cm^-3 (np.pi*me*omega**2)/e**2
 Te = 1d6 		; K
 psi = 6d0 		; Electron spectral index
 vd = 2d9 		; cm/s
-Ns = 4e10		; cm^-2
+Ns = 4e9		; cm^-2
 dreal = 1e9 	; cm
 L = 1.6002e11	; cm
 vthermal = sqrt(2d0*kb*Te/me)  ; cm/s
@@ -151,7 +151,7 @@ sconst1 = (Omega_p^2/V^2)*(alog(V) + 2.0*alog(Lambda))
 
 loadct, 1
 window, 0, xs=800, ys=1000
-window, 1, xs=600, ys=600
+window, 1, xs=400, ys=400
 mi1 = where(V lt 1.2 and V gt 1.0)
 nstart=1
 for l=1, n_elements(X)-1 do begin
@@ -167,7 +167,7 @@ for l=1, n_elements(X)-1 do begin
 		;
 		;		Electron beam distribution
 		;
-		for m=3, n_elements(V)-2 do begin
+		for m=1, n_elements(V)-2 do begin
 		
 			S1 = sfun(m, n, l-1, Ftot=F, Wtot=W, Fthermal=FT, Fs=Fs, Wthermal=WT, const0 = sconst0[m], const1 = sconst1[m])
 			;if ~finite(S1) then stop
@@ -226,9 +226,8 @@ for l=1, n_elements(X)-1 do begin
 		W[mi1, n, l] = -Phi[mi1]/Gamma1[mi1]
 
 
-
 		nplot = 200/tres
-		if X[l]/D ge 4.1 and n lt nplot then begin
+		if X[l]/D ge 4.0 and n lt nplot then begin
 			wset, 0
 			plot_image, congrid( sigrange(reform(Fs[*, 0:nplot, l-1])), ntsteps, ntsteps), pos = [0.1, 0.7, 0.5, 0.95], /noerase, title='Fs'
 			plot_image, congrid( bytscl(reform(Fp[*, 0:nplot, l]), -50, 50), ntsteps, ntsteps), pos = [0.1, 0.4, 0.5, 0.65], /noerase, title='Fp'
@@ -237,11 +236,12 @@ for l=1, n_elements(X)-1 do begin
 
 			set_line_color
 			wset, 1
-			plot, V, F[*, n, l], pos = [0.15, 0.55, 0.95, 0.95], yr=[1e-6, 0.1], /ylog, title=X[l]/D, color=1
+			plot, V, F[*, n, l], pos = [0.15, 0.55, 0.95, 0.95], yr=[1e-6, 1e4], /ylog, title=X[l]/D, color=1
 			oplot, V, Fp[*, n, l], color=5
 			plot, V, W[*, n, l], pos = [0.15, 0.1, 0.95, 0.5], yr=[-10, 10], title=X[l]/D, /noerase
 
 			loadct, 1, /silent
+			if n eq 40 then stop
 			
 		endif
 		;if X[l]/D ge 3.6 then nstart=20

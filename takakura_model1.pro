@@ -22,6 +22,7 @@ function sfun, vindex, tindex, xindex, $
 
 	dFtot = Ftot[vindex+1, tindex, xindex] - Ftot[vindex, tindex, xindex]
 	dFtherm = Fthermal[vindex+1]-Fthermal[vindex]
+	
 	valS = const0*( dFtot*Wtot[vindex, tindex, xindex] - dFtherm*Wthermal[vindex] ) $
 		+ const1*Fs[vindex, tindex, xindex]
 
@@ -144,8 +145,8 @@ sconst0 = (1.0/(delv*V))
 sconst1 = (alog(V)/V^2)
 
 loadct, 1
-window, 0, xs=800, ys=1000
-window, 1, xs=400, ys=400
+window, 2, xs=800, ys=1000
+window, 3, xs=400, ys=400
 mi1 = where(V lt 1.2 and V gt 1.0)
 nstart=1
 
@@ -165,7 +166,7 @@ for l=1, n_elements(X)-1 do begin
 		for m=1, n_elements(V)-2 do begin
 		
 			S1 = sfun(m, n, l-1, Ftot=F, Wtot=W, Fthermal=FT, Fs=Fs, Wthermal=WT, const0 = sconst0[m], const1 = sconst1[m])
-			S0 = sfun(m-1, n, l-1, Ftot=F, Wtot=W, Fthermal=FT, Fs=Fs, Wthermal=WT, const0 = sconst0[m], const1 = sconst1[m])
+			S0 = sfun(m-1, n, l-1, Ftot=F, Wtot=W, Fthermal=FT, Fs=Fs, Wthermal=WT, const0 = sconst0[m-1], const1 = sconst1[m-1])
 			delS = S1-S0
 
 			if l eq 1 or X[l]/D>6.1 then begin
@@ -218,21 +219,21 @@ for l=1, n_elements(X)-1 do begin
 		W[mi1, n, l] = -Phi[mi1]/Gamma1[mi1]
 
 		nplot = 200/tres
-		if X[l]/D ge 13.0 and n lt nplot then begin
-			wset, 0
+		if X[l]/D ge 14.0 and n lt nplot then begin
+			wset, 2
 			plot_image, congrid( sigrange(reform(Fs[*, 0:nplot, l-1])), ntsteps, ntsteps), pos = [0.1, 0.7, 0.5, 0.95], /noerase, title='Fs'
 			plot_image, congrid( bytscl(reform(Fp[*, 0:nplot, l]), -50, 50), ntsteps, ntsteps), pos = [0.1, 0.4, 0.5, 0.65], /noerase, title='Fp'
 			plot_image, congrid( sigrange(reform(alog10(F[*, 0:nplot, l]))), ntsteps, ntsteps), pos = [0.1, 0.1, 0.5, 0.35], /noerase, title='F', xtitle='Velocity', ytitle='time'	
 			plot_image, congrid( sigrange(reform(alog10(W[*, 0:nplot, l]) )), ntsteps, ntsteps), pos = [0.55, 0.7, 0.95, 0.95], /noerase, title='W'
 
 			set_line_color
-			wset, 1
-			plot, V, F[*, n, l], pos = [0.15, 0.55, 0.95, 0.95], yr=[1e-6, 0.1], /ylog, title=X[l]/D, color=1
+			wset, 3
+			plot, V, F[*, n, l], pos = [0.15, 0.55, 0.95, 0.95], yr=[1e-6, 1e4], /ylog, title=X[l]/D, color=1
 			oplot, V, Fp[*, n, l], color=5
 			plot, V, W[*, n, l], pos = [0.15, 0.1, 0.95, 0.5], yr=[-10, 10], title=X[l]/D, /noerase
 
 			loadct, 1, /silent
-			
+			if n eq 40 then stop
 		endif
 
 		;if X[l]/D ge 5.0 then nstart=100
